@@ -61,25 +61,25 @@ def trade(num):
 
     for coin in sell_list:
         volume = (cur_val[coin]) / pyupbit.get_current_price(coin)
-        # res = upbit.sell_market_order(coin, volume)
+        res = upbit.sell_market_order(coin, volume)
         time.sleep(0.1)
         logger.info(f"sell \t{coin} \t{cur_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
 
-    for coin in buy_list:
-        # res = upbit.buy_market_order(coin, cur_val[coin])
-        time.sleep(0.1)
-        logger.info(f"buy \t{coin} \t{post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
-
     for coin in check_list:
         if cur_val[coin] < post_val[coin]:
-            # res = upbit.buy_market_order(coin, post_val[coin] - cur_val[coin])
+            res = upbit.buy_market_order(coin, post_val[coin] - cur_val[coin])
             time.sleep(0.1)
             logger.info(f"buy \t{coin} \t{post_val[coin] - cur_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
         else:
             volume = (cur_val[coin] - post_val[coin]) / pyupbit.get_current_price(coin)
-            # res = upbit.sell_market_order(coin, volume)
+            res = upbit.sell_market_order(coin, volume)
             time.sleep(0.1)
             logger.info(f"sell \t{coin} \t{cur_val[coin] - post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+
+    for coin in buy_list:
+        res = upbit.buy_market_order(coin, post_val[coin])
+        time.sleep(0.1)
+        logger.info(f"buy \t{coin} \t{post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
     return
 
 
@@ -115,6 +115,7 @@ def get_rank(num):
     currency_amount.sort(key=lambda x: -x[1])
     logger.info(currency_amount[:num])
     return currency_amount[:num]
+
 
 trade(5)
 
