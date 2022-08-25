@@ -1,9 +1,8 @@
-import telegram
 import pyupbit
 import time
 import schedule
 import datetime
-
+import logging
 
 # ## 텔레그램 토큰키와 챗아이디를 가지고 있으면 아래의 각각 항목에 대입해주고
 # bot = telegram.Bot(token='텔레그램토큰키')  # 본인의 텔레그램 토큰키  넣으세요.
@@ -15,35 +14,74 @@ import datetime
 #     print(text)
 
 
-access = "Dddyixi3RpVjVD4XfIyP7xmIebpfKU1Xt4FKumpE"  # upbit 에서 받은 본인의 엑세스키  넣으세요.
-secret = "aGItZYSG3xZJu1MCAbjpSBwfejMMTqFHQsDRBf4a"  # upbit 에서 받은 본인의 시크릿키  넣으세요.
+access = "FPaArdbeEikSluRjR2bn4kniZyY8Gxmd2JpHoTDv"  # upbit 에서 받은 본인의 엑세스키  넣으세요.
+secret = "7ZgMctz3Z8Ccwt3ARxwBdg2kIx4xxksDuVWJGPDZ"  # upbit 에서 받은 본인의 시크릿키  넣으세요.
 
 
 # 로그인
 upbit = pyupbit.Upbit(access, secret)
 
-coins = {'BTC': 0.6, 'ETH': 0.2}
-#
-#
-balances = upbit.get_balances()
-print(balances)
 
-def trade():
-    cur_val = {coin: 0 for coin in coins.keys()}
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter(fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+stream_handler.setLevel(logging.INFO)
+logger.addHandler(stream_handler)
+
+
+def trade(num):
+    now = datetime.datetime.now()
+    file_handler = logging.FileHandler(f"./log{now.year}{now.month}{now.day}.txt")
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+    logger.addHandler(file_handler)
+
+    cur_val = {}
+
     asset = get_asset(cur_val)
-    now = time.localtime()
-    print("%04d/%02d/%02d %02d:%02d:%02d" % (now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec))
-    print(f"Total value : {asset:,.0f}")
-    for coin in coins.keys():
-        if cur_val[coin] < coins[coin] * asset:
-            # res = upbit.buy_market_order(coin, coins[coin] * asset - cur_val[coin])
-            temp = 'KRW-' + coin
-            print(f"buy \t{coin} \t{coins[coin] * asset - cur_val[coin]:,.0f} \t{pyupbit.get_current_price(temp):,.0f}")
+
+    trade_list = get_rank(num)
+
+    post_val = {coin: asset * (0.8/num) for coin, _ in trade_list}
+
+    logger.info(f"Total value : {asset:,.0f}")
+
+    sell_list = set(cur_val.keys()) - set(post_val.keys())
+    buy_list = set(post_val.keys()) - set(cur_val.keys())
+    check_list = set(cur_val.keys()).intersection(set(post_val.keys()))
+
+    logger.info(f"sell list {sell_list}")
+    logger.info(f"buy list {buy_list}")
+    logger.info(f"check list {check_list}")
+    logger.info(f"cur val {cur_val}")
+    logger.info(f"post val {post_val}")
+
+    for coin in sell_list:
+        volume = (cur_val[coin]) / pyupbit.get_current_price(coin)
+        # res = upbit.sell_market_order(coin, volume)
+        time.sleep(0.1)
+        logger.info(f"sell \t{coin} \t{cur_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+
+    for coin in buy_list:
+        # res = upbit.buy_market_order(coin, cur_val[coin])
+        time.sleep(0.1)
+        logger.info(f"buy \t{coin} \t{post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+
+    for coin in check_list:
+        if cur_val[coin] < post_val[coin]:
+            # res = upbit.buy_market_order(coin, post_val[coin] - cur_val[coin])
+            time.sleep(0.1)
+            logger.info(f"buy \t{coin} \t{post_val[coin] - cur_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
         else:
-            # res = upbit.sell_market_order(coin, cur_val[coin] - coins[coin] * asset)
-            temp = 'KRW-' + coin
-            print(f"sell \t{coin} \t{cur_val[coin]- coins[coin] * asset:,.0f} \t{pyupbit.get_current_price(temp):,.0f}")
+            volume = (cur_val[coin] - post_val[coin]) / pyupbit.get_current_price(coin)
+            # res = upbit.sell_market_order(coin, volume)
+            time.sleep(0.1)
+            logger.info(f"sell \t{coin} \t{cur_val[coin] - post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
     return
+
 
 def get_asset(cur_val):
     balances = upbit.get_balances()
@@ -57,115 +95,32 @@ def get_asset(cur_val):
             cur_price = pyupbit.get_current_price(ticker)
             temp = cur_price * float(b['balance'])
             total += temp
-            cur_val[coin] = temp
+            cur_val[ticker] = temp
     return total
 
-trade()
-# # 해당 코인 보유수량 반환
-# def get_balance(coin):
-#     """잔고 조회"""
-#     balances = upbit.get_balances()
-#     for b in balances:
-#         if b['currency'] == coin:
-#             if b['balance'] is not None:
-#                 return float(b['balance'])
-#             else:
-#                 return 0
-#         time.sleep(0.2)
-#     return 0
-#
-#
-# # 해당 코인 매수평균단가 반환
-# def get_avg_buy_price(coin):
-#     """잔고 조회"""
-#     balances = upbit.get_balances()
-#     for b in balances:
-#         if b['currency'] == coin:
-#             if b['avg_buy_price'] is not None:
-#                 return float(b['avg_buy_price'])
-#             else:
-#                 return 0
-#         time.sleep(0.2)
-#     return 0
-#
-#
-# # 시장가 매도 함수
-# def sell(coin, percent):
-#     amount = get_balance(coin)  # upbit.get_balance(coin)
-#     ticker = 'KRW-' + coin
-#     cur_price = pyupbit.get_current_price(ticker)
-#     total = amount * cur_price
-#
-#     old_price = get_avg_buy_price(coin)
-#     old_total = amount * old_price
-#
-#     if total > 5001 and total >= old_total * percent:
-#         # 시장가 매도 인데 매수시점보다 percent 상승했으면 매도 진행함.
-#         res = upbit.sell_market_order(ticker, amount)
-#         strMsg = coin + " : 시장가 매도 =" + str(res)
-#         post_message(strMsg)
-#
-#
-# # 시장가 매수 함수
-# def buy(coin):
-#     money = upbit.get_balance("KRW")
-#     if money >= 10000:
-#         money = 10000  # 1만원으로 고정함 코인이 5개니까 총 5만원으로 운용함.
-#
-#     amount = get_balance(coin)  # upbit.get_balance(coin)
-#     old_price = get_avg_buy_price(coin)
-#     old_total = amount * old_price
-#
-#     if old_total < 5001 and money >= 10000:
-#         ticker = 'KRW-' + coin
-#         res = upbit.buy_market_order(ticker, money)
-#         strMsg = coin + " : 시장가 매수 =" + str(res)
-#         post_message(strMsg)
-#
-#
-# def buy_job():
-#     # 매수
-#     # 단, 이미 보유하고 있으면 추가 매수는 안함.
-#     for coin in coins:
-#         buy(coin)
-#         time.sleep(0.2)
-#
-#
-# def sell_job_10():
-#     # 매도
-#     # 단, 10% 이상 수익율이면 매도 아니면 홀딩
-#     percent = 1.10
-#     for coin in coins:
-#         sell(coin, percent)
-#         time.sleep(0.2)
-#
-#
-# def sell_job_03():
-#     # 매도 시간은 오전 8시50분
-#     # 단, 3% 이상 수익율이면 매도 아니면 홀딩
-#     percent = 1.03
-#     for coin in coins:
-#         sell(coin, percent)
-#         time.sleep(0.2)
-#
-#     # 연습용임
-#
-#
-# def test_job():
-#     now = time.localtime()
-#     strMsg = "%04d/%02d/%02d %02d:%02d:%02d" % (
-#     now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec)
-#     post_message(strMsg)
-#     # 출처: https://technote.kr/264 [TechNote.kr]
-#
-# telegram
-#
-#
-#
-# # 실제 실행구문
-# strMsg = "==예약 매수 매도 autotrader 시작=="
-# post_message(strMsg)
-#
-# while True:
-#     schedule.run_pending()  # 스케쥴 실행
-#     time.sleep(1)
+
+def get_rank(num):
+    currency_amount = []
+    krw_tickers = pyupbit.get_tickers(fiat="KRW")
+    # print(krw_tickers, len(krw_tickers))
+    # temp = pyupbit.get_ohlcv("KRW-EOS", count=24, interval='minute60')
+    # print(temp)
+    for cur in krw_tickers:
+        temp = pyupbit.get_ohlcv(cur, count=24, interval='minute60')
+        if temp is not None:
+            currency_amount.append((cur, sum(temp['value'])))
+        else:
+            print(cur)
+        time.sleep(0.1)
+    currency_amount.sort(key=lambda x: -x[1])
+    logger.info(currency_amount[:num])
+    return currency_amount[:num]
+
+trade(5)
+
+schedule.every(60).minutes.do(trade, 5)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
+
