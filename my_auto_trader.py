@@ -17,6 +17,7 @@ import logging
 access = ""  # upbit 에서 받은 본인의 엑세스키  넣으세요.
 secret = ""  # upbit 에서 받은 본인의 시크릿키  넣으세요.
 
+coin_rate = {"KRW-BTC":0.4, "KRW-ETC":0.2, "KRW-ETH":0.2}
 
 # 로그인
 upbit = pyupbit.Upbit(access, secret)
@@ -42,30 +43,47 @@ def trade(num):
     cur_val = {}
 
     asset = get_asset(cur_val)
+    post_val = {coin: asset*coin_rate[coin] for coin in coin_rate.keys()}
+    # trade_list = get_rank(num)
 
-    trade_list = get_rank(num)
-
-    post_val = {coin: asset * (0.8/num) for coin, _ in trade_list}
+    # post_val = {coin: asset * (0.8/num) for coin, _ in trade_list}
 
     logger.info(f"Total value : {asset:,.0f}")
 
-    sell_list = set(cur_val.keys()) - set(post_val.keys())
-    buy_list = set(post_val.keys()) - set(cur_val.keys())
-    check_list = set(cur_val.keys()).intersection(set(post_val.keys()))
+    # sell_list = set(cur_val.keys()) - set(post_val.keys())
+    # buy_list = set(post_val.keys()) - set(cur_val.keys())
+    # check_list = set(cur_val.keys()).intersection(set(post_val.keys()))
 
-    logger.info(f"sell list {sell_list}")
-    logger.info(f"buy list {buy_list}")
-    logger.info(f"check list {check_list}")
-    logger.info(f"cur val {cur_val}")
-    logger.info(f"post val {post_val}")
+    # logger.info(f"sell list {sell_list}")
+    # logger.info(f"buy list {buy_list}")
+    # logger.info(f"check list {check_list}")
+    # logger.info(f"cur val {cur_val}")
+    # logger.info(f"post val {post_val}")
 
-    for coin in sell_list:
-        volume = (cur_val[coin]) / pyupbit.get_current_price(coin)
-        res = upbit.sell_market_order(coin, volume)
-        time.sleep(0.1)
-        logger.info(f"sell \t{coin} \t{cur_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+    # for coin in sell_list:
+    #     volume = (cur_val[coin]) / pyupbit.get_current_price(coin)
+    #     res = upbit.sell_market_order(coin, volume)
+    #     time.sleep(0.1)
+    #     logger.info(f"sell \t{coin} \t{cur_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
 
-    for coin in check_list:
+    # for coin in check_list:
+    #     if cur_val[coin] < post_val[coin]:
+    #         res = upbit.buy_market_order(coin, post_val[coin] - cur_val[coin])
+    #         time.sleep(0.1)
+    #         logger.info(f"buy \t{coin} \t{post_val[coin] - cur_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+    #     else:
+    #         volume = (cur_val[coin] - post_val[coin]) / pyupbit.get_current_price(coin)
+    #         res = upbit.sell_market_order(coin, volume)
+    #         time.sleep(0.1)
+    #         logger.info(f"sell \t{coin} \t{cur_val[coin] - post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+
+    # for coin in buy_list:
+    #     res = upbit.buy_market_order(coin, post_val[coin])
+    #     time.sleep(0.1)
+    #     logger.info(f"buy \t{coin} \t{post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+    for coin in cur_val.keys():
+        if coin not in post_val.keys():
+            continue
         if cur_val[coin] < post_val[coin]:
             res = upbit.buy_market_order(coin, post_val[coin] - cur_val[coin])
             time.sleep(0.1)
@@ -76,10 +94,7 @@ def trade(num):
             time.sleep(0.1)
             logger.info(f"sell \t{coin} \t{cur_val[coin] - post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
 
-    for coin in buy_list:
-        res = upbit.buy_market_order(coin, post_val[coin])
-        time.sleep(0.1)
-        logger.info(f"buy \t{coin} \t{post_val[coin]:,.0f} \t{pyupbit.get_current_price(coin):,.0f}")
+
     return
 
 
