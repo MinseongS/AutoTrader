@@ -14,8 +14,8 @@ import logging
 #     print(text)
 
 
-access = "FPaArdbeEikSluRjR2bn4kniZyY8Gxmd2JpHoTDv"  # upbit 에서 받은 본인의 엑세스키  넣으세요.
-secret = "7ZgMctz3Z8Ccwt3ARxwBdg2kIx4xxksDuVWJGPDZ"  # upbit 에서 받은 본인의 시크릿키  넣으세요.
+access = ""  # upbit 에서 받은 본인의 엑세스키  넣으세요.
+secret = ""  # upbit 에서 받은 본인의 시크릿키  넣으세요.
 
 
 # 로그인
